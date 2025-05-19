@@ -25,7 +25,7 @@ TENSORBOARD_LOGS_PATH=${2:-"/DATA/disk2/yuhang/.cache/Megatron/BitMind/TENSORBOA
 VOCAB_FILE=${3:-"/DATA/disk2/yuhang/.cache/modelscope/models/Qwen/Qwen2___5-0___5B-Instruct/vocab.json"}
 MERGE_FILE=${4:-"/DATA/disk2/yuhang/.cache/modelscope/models/Qwen/Qwen2___5-0___5B-Instruct/merges.txt"}
 #TOKENIZER_CONFIG_FILE=${6:-"/DATA/disk2/yuhang/.cache/modelscope/models/Qwen/Qwen2___5-0___5B-Instruct/tokenizer_config.json"}
-DATA_PATH=${5:-"/DATA/disk2/yuhang/.cache/Megatron/BitMind"}
+DATA_PATH=${5:-"/DATA/disk2/yuhang/.cache/Megatron/BitMind/data_test_text_document"}
 
 # Determine the absolute path of the directory where the script is located
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
