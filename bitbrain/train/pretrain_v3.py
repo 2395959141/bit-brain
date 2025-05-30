@@ -17,7 +17,7 @@ from loguru import logger
 model_id = "Qwen/Qwen2-0.5B"
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--batch_size", type=int, default=4)
+parser.add_argument("--batch_size", type=int, default=8)
 parser.add_argument("--seq_len", type=int, default=2048)
 args = parser.parse_args()
 
@@ -29,13 +29,21 @@ tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
 logger.info(f"Tokenizer for {model_id} loaded successfully.")
 
 ##! (0) 加载并配置训练数据集
-train_dataset = PretrainDataset_v1(data_path="/home/ytllm/.cache/pretrain_data/data_jsonl/00127.jsonl",
+train_dataset = PretrainDataset_v2(data_path="/home/ytllm/.cache/pretrain_data/bit-brain/week1/step1_unified_format/processed_chinese_fine_web_edu.jsonl",
                                     tokenizer=tokenizer,
                                     max_length=2048)
 
 train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [0.9, 0.1])
-train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+train_loader = DataLoader(train_dataset,
+                        batch_size=args.batch_size,
+                        pin_memory=True,
+                        num_workers=16,
+                        shuffle=True)
+val_loader = DataLoader(val_dataset,
+                        batch_size=args.batch_size,
+                        pin_memory=True,
+                        num_workers=4,
+                        shuffle=False)
 
 #* 训练配置参数
 gradient_accumulation_steps = 4  # 梯度累计步数，实际batch_size = batch_size * gradient_accumulation_steps
@@ -45,6 +53,7 @@ use_gradient_checkpointing = True  # 是否使用梯度检查点（重计算）�
 use_torch_compile = True  # 是否使用 torch.compile 编译优化（PyTorch 2.0+）
 compile_mode = "default"  # 编译模式：'default', 'reduce-overhead', 'max-autotune'
 
+torch.set_float32_matmul_precision('high')
 
 def get_gpu_peak_flops():
     """
