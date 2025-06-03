@@ -119,7 +119,7 @@ else:
     #val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
 #* 训练配置参数
-gradient_accumulation_steps = 4  # 梯度累计步数，实际batch_size = batch_size * gradient_accumulation_steps
+gradient_accumulation_steps = 2  # 梯度累计步数，实际batch_size = batch_size * gradient_accumulation_steps
 # use_mixed_precision 布尔标志已移除，混合精度默认启用
 mixed_precision_dtype = torch.bfloat16  # 或者 torch.float16，根据需要配置
 # use_gradient_checkpointing 布尔标志已移除，梯度检查点默认尝试启用
