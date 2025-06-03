@@ -157,7 +157,7 @@ def main():
     # 加载原始数据集后添加以下代码
     total_samples = len(subset_dataset)
     subset_size = int(total_samples * args.file_ratio)
-    print(f"原始数据集样本数: {total_samples}, 将处理前40%数据: {subset_size} 个样本")
+    print(f"原始数据集样本数: {total_samples}, 将处理{args.file_ratio}总数据: {subset_size} 个样本")
     
     # 创建子集数据集
     subset_dataset = subset_dataset.select(range(subset_size))
