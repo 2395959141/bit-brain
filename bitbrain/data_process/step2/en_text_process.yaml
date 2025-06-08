@@ -5,7 +5,7 @@ project_name: 'Data-Juicer-recipes-c4-changed'
 dataset_path: '/DATA/disk2/yuhang/.cache/bit_brain_data/step1_unified_format/processed_dolma_en.jsonl'  # path to your dataset directory or file
 export_path: '/DATA/disk2/yuhang/.cache/bit_brain_data/data_juicer_clean_code_data/en_datas/dataset_text_en.jsonl' # path to your dataset result file
 
-np: 50  # number of subprocess to process your dataset
+np: 20  # number of subprocess to process your dataset
 open_tracer: True
 
 # process schedule
