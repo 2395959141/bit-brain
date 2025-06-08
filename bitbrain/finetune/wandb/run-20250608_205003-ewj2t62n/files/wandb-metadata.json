@@ -1,0 +1,138 @@
+{
+  "os": "Linux-5.15.0-88-generic-x86_64-with-glibc2.35",
+  "python": "CPython 3.12.9",
+  "startedAt": "2025-06-08T12:50:03.075704Z",
+  "args": [
+    "--stage",
+    "sft",
+    "--do_train",
+    "--model_name_or_path",
+    "/home/chenyuhang/bit-brain/bitbrain/models/pertrain_qwen3_0.6B",
+    "--cutoff_len",
+    "1024",
+    "--dataset_dir",
+    "/DATA/disk2/yuhang/.cache/steel_dataset/sft_data/llamafactory_input",
+    "--dataset",
+    "baai_instruct_70W,baai_instruct_682W,openhermes_custom,wanjuan_exam_399W",
+    "--report_to",
+    "wandb",
+    "--run_name",
+    "sft_bit-brain-v1",
+    "--preprocessing_num_workers",
+    "40",
+    "--template",
+    "qwen",
+    "--finetuning_type",
+    "full",
+    "--output_dir",
+    "/DATA/disk2/yuhang/.cache/ckpt/bit-brain/sft/bit-brain-v1-full-sft",
+    "--overwrite_output_dir",
+    "--overwrite_cache",
+    "--per_device_train_batch_size",
+    "26",
+    "--per_device_eval_batch_size",
+    "4",
+    "--do_eval",
+    "--val_size",
+    "0.01",
+    "--eval_strategy",
+    "steps",
+    "--eval_steps",
+    "1000",
+    "--flash_attn",
+    "fa2",
+    "--gradient_accumulation_steps",
+    "4",
+    "--lr_scheduler_type",
+    "cosine",
+    "--logging_steps",
+    "10",
+    "--save_steps",
+    "5000",
+    "--learning_rate",
+    "1.5e-4",
+    "--weight_decay",
+    "0.0",
+    "--num_train_epochs",
+    "4.0",
+    "--plot_loss",
+    "--bf16"
+  ],
+  "program": "/home/chenyuhang/LLaMA-Factory/src/train.py",
+  "git": {
+    "remote": "https://github.com/2395959141/bit-brain.git",
+    "commit": "9a73e8857ace18a7e602a59715726c5bc9fcc6b2"
+  },
+  "email": "12332669@mail.sustech.edu.cn",
+  "root": "/home/chenyuhang/bit-brain/bitbrain/finetune",
+  "host": "shanghai-jiaoda-gpu-1",
+  "executable": "/home/chenyuhang/anaconda3/envs/transformers/bin/python3.12",
+  "cpu_count": 96,
+  "cpu_count_logical": 192,
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "gpu_count": 8,
+  "disk": {
+    "/": {
+      "total": "942963191808",
+      "used": "542379945984"
+    }
+  },
+  "memory": {
+    "total": "2164158345216"
+  },
+  "cpu": {
+    "count": 96,
+    "countLogical": 192
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "memoryTotal": "85520809984",
+      "cudaCores": 16896,
+      "architecture": "Hopper"
+    },
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "memoryTotal": "85520809984",
+      "cudaCores": 16896,
+      "architecture": "Hopper"
+    },
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "memoryTotal": "85520809984",
+      "cudaCores": 16896,
+      "architecture": "Hopper"
+    },
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "memoryTotal": "85520809984",
+      "cudaCores": 16896,
+      "architecture": "Hopper"
+    },
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "memoryTotal": "85520809984",
+      "cudaCores": 16896,
+      "architecture": "Hopper"
+    },
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "memoryTotal": "85520809984",
+      "cudaCores": 16896,
+      "architecture": "Hopper"
+    },
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "memoryTotal": "85520809984",
+      "cudaCores": 16896,
+      "architecture": "Hopper"
+    },
+    {
+      "name": "NVIDIA H100 80GB HBM3",
+      "memoryTotal": "85520809984",
+      "cudaCores": 16896,
+      "architecture": "Hopper"
+    }
+  ],
+  "cudaVersion": "12.8"
+}
