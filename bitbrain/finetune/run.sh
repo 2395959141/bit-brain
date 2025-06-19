@@ -25,17 +25,18 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 #!    --max_steps 100000 \
 
 #!  baai_instruct_70W,baai_instruct_682W,deepctl_200W \
+# deepctl_1120W_zh,deepctl_276W_en,baai_instruct_70W,ultrachat_200k,wanjuan_exam_399W \
 #! --max_samples 2000000 \
 
 
 FORCE_TORCHRUN=1 CUDA_VISIBLE_DEVICES=4,5,6,7  torchrun --nproc_per_node 4 $LLaMA_PATH/src/train.py \
     --stage sft \
     --do_train \
-    --model_name_or_path /home/chenyuhang/bit-brain/bitbrain/models/pertrain_qwen3_0.6B \
+    --model_name_or_path /home/chenyuhang/bit-brain/bitbrain/models/Bitbran-0.6B-base \
     --cutoff_len 2048 \
     --dataset_dir /DATA/disk2/yuhang/.cache/steel_dataset/sft_data/llamafactory_input \
-    --dataset deepctl_1120W_zh,deepctl_276W_en,baai_instruct_70W,ultrachat_200k,wanjuan_exam_399W \
-    --max_samples 2000000 \
+    --dataset shared_gpt_format \
+    --max_samples 10000000 \
     --overwrite_cache \
     --packing False \
     --use_swanlab true \
@@ -52,13 +53,13 @@ FORCE_TORCHRUN=1 CUDA_VISIBLE_DEVICES=4,5,6,7  torchrun --nproc_per_node 4 $LLaM
     --val_size 100 \
     --eval_strategy steps \
     --eval_steps 1000 \
-    --flash_attn sdpa\
+    --flash_attn fa2\
     --gradient_accumulation_steps 4 \
     --lr_scheduler_type cosine \
-    --warmup_ratio 0.1 \
+    --warmup_ratio 0.0125 \
     --max_grad_norm 1.0 \
     --logging_steps 10 \
-    --save_steps 500 \
+    --save_steps 5000 \
     --learning_rate 2e-5 \
     --weight_decay 0.01 \
     --num_train_epochs 4.0 \
