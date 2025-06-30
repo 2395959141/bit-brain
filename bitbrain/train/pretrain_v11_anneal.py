@@ -37,7 +37,7 @@ torch._inductor.config.triton.cudagraph_trees = False
 parser = argparse.ArgumentParser()
 parser.add_argument("--model_id", type=str, default="/DATA/disk2/yuhang/.cache/modelscope/models/Qwen/Qwen3-0.6B", help="模型文件路径")
 #! 训练数据集相关参数
-parser.add_argument("--data_path", type=str, default="/DATA/disk2/yuhang/.cache/bit_brain_data/pretrain", help="训练数据集路径")
+parser.add_argument("--data_path", type=str, default="/DATA/disk2/yuhang/.cache/bit_brain_data/Annealing", help="训练数据集路径")
 parser.add_argument("--num_epochs", type=int, default=1, help="训练轮数")
 parser.add_argument("--batch_size", type=int, default=12)
 parser.add_argument("--seq_len", type=int, default=2048, help="训练时使用的序列长度")
@@ -48,7 +48,7 @@ parser.add_argument("--master_addr", type=str, default="localhost", help="Master
 parser.add_argument("--master_port", type=str, default="12355", help="Master port for distributed training")
 #! 添加模型保存相关参数
 parser.add_argument("--save_dir", type=str, default="./out_v3", help="用于保存在epoch中途的检查点的目录。默认: 'checkpoints_in_epoch'")
-parser.add_argument("--save_interval", type=int, default=10000, help="每N个原始批次（dataloader的批次）保存一次检查点。默认: 1000。如果为0，则禁用epoch中途保存。")
+parser.add_argument("--save_interval", type=int, default=5000, help="每N个原始批次（dataloader的批次）保存一次检查点。默认: 1000。如果为0，则禁用epoch中途保存。")
 parser.add_argument("--resume_from_checkpoint", type=str, default=None, help="从指定的检查点文件路径恢复训练。默认：None")
 parser.add_argument("--swanlab_id", type=str, default=None, help="SwanLab实验ID。默认：None")
 args = parser.parse_args()
@@ -313,8 +313,8 @@ lr_scheduler_config = {
     "peak_lr": 3.0e-4,
     "min_lr": 3.0e-5,
     "warmup_steps": 20000,
-    "decay_steps": 27000,
-    "total_steps": 288630
+    "decay_steps": 26500,
+    "total_steps": 246500
 }
 #! 添加权重衰减参数
 weight_decay = 0.01 # 你要求的权重衰减值
@@ -557,6 +557,17 @@ def save_checkpoint_helper(model, optimizer, scheduler, scaler, config_to_save, 
     torch.save(checkpoint_data, checkpoint_path)
     original_logger_info(f"检查点已保存至: {checkpoint_path} (Epoch {epoch}, Optimizer Step in Epoch {current_optimizer_step_in_epoch})")
 
+# 在修改学习率配置前，先验证兼容性
+def validate_lr_schedule_compatibility(checkpoint_step, new_total_steps, new_decay_steps):
+    """验证新的学习率调度是否与checkpoint兼容"""
+    if checkpoint_step >= new_total_steps:
+        raise ValueError(f"Checkpoint步数 ({checkpoint_step}) 超过新的总步数 ({new_total_steps})")
+    
+    new_decay_start = new_total_steps - new_decay_steps
+    if checkpoint_step >= new_decay_start:
+        logger.warning(f"Checkpoint步数 ({checkpoint_step}) 已进入新配置的衰减阶段 (从第{new_decay_start}步开始)")
+    
+    return True
 
 #! (5) 修改训练循环支持分布式训练和SwanLab记录
 def train(model, optimizer, scheduler, train_loader, device,
@@ -749,32 +760,49 @@ if args.resume_from_checkpoint:
     try:
         checkpoint = torch.load(args.resume_from_checkpoint, map_location=device, weights_only=False)
         
-        # 恢复模型权重
-        # 处理DDP和非DDP情况
+        # ✅ 1. 加载模型权重
         model_to_load = model.module if is_distributed else model
         model_to_load.load_state_dict(checkpoint['model_state_dict'])
         logger.info("模型权重已成功恢复")
 
-        # 恢复优化器状态
+        # ✅ 2. 加载优化器状态（保持动量等历史信息）
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         logger.info("优化器状态已成功恢复")
 
-        # 恢复学习率调度器状态
-        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        logger.info("学习率调度器状态已成功恢复")
-
-        # 恢复 GradScaler 状态
+        # ❌ 3. 不加载调度器状态，使用新的调度策略
+        # scheduler.load_state_dict(checkpoint['scheduler_state_dict'])  # 注释掉
+        
+        # ✅ 4. 手动同步调度器步数到checkpoint的位置
+        resumed_global_optimizer_step = checkpoint['global_optimizer_step']
+        
+        # 关键：让新调度器"快进"到正确的步数
+        for _ in range(resumed_global_optimizer_step):
+            scheduler.step()
+        
+        logger.info(f"调度器已同步到第 {resumed_global_optimizer_step} 步，使用新的学习率配置")
+        
+        # ✅ 5. 恢复GradScaler状态
         if scaler is not None and 'scaler_state_dict' in checkpoint and checkpoint['scaler_state_dict'] is not None:
             scaler.load_state_dict(checkpoint['scaler_state_dict'])
             logger.info("GradScaler 状态已成功恢复")
         
-        # 恢复训练进度
-        # epoch 在保存时是 1-based，代表下一个要开始的 epoch
-        start_epoch = checkpoint['epoch'] - 1 # 转换回 0-based
-        resumed_global_optimizer_step = checkpoint['global_optimizer_step']
-        total_tokens_processed = checkpoint.get('total_tokens_processed', 0) # 恢复总处理token数
+        # ✅ 6. 设置训练进度（但禁用跳过逻辑）
+        start_epoch = 0  # 重置为0，从新数据集开始
+        total_tokens_processed = 0  # 重置token计数
         
-        logger.info(f"将从 Epoch {start_epoch + 1} (1-based) 和全局优化器步数 {resumed_global_optimizer_step} 继续训练")
+        # 显示当前学习率状态
+        current_lr = scheduler.get_last_lr()
+        lr_muon, lr_adamw = current_lr[0], current_lr[1]
+        logger.info(f"当前学习率状态 - Muon: {lr_muon:.8f}, AdamW: {lr_adamw:.8f}")
+        
+        logger.info("将使用新数据集和新学习率配置，但保持优化器历史状态")
+        
+        # 在检查点加载前验证
+        validate_lr_schedule_compatibility(
+            resumed_global_optimizer_step, 
+            lr_scheduler_config["total_steps"], 
+            lr_scheduler_config["decay_steps"]
+        )
         
     except FileNotFoundError:
         logger.error(f"错误: 检查点文件未找到于 '{args.resume_from_checkpoint}'。将从头开始训练。")
@@ -785,30 +813,18 @@ if args.resume_from_checkpoint:
 
 # ------------------- 结束: 添加检查点加载逻辑 ------------------- #
 
-for epoch in range(start_epoch, args.num_epochs): # epoch will be 0, 1, ...
+for epoch in range(start_epoch, args.num_epochs):
     logger.info(f"Starting epoch {epoch + 1}/{args.num_epochs}")
     
-    # 计算当前epoch的 optimizer step 总数
-    # steps_per_epoch variable already holds len(train_loader) // gradient_accumulation_steps
-    # num_optimizer_steps_per_epoch = len(train_loader) // gradient_accumulation_steps
-    num_optimizer_steps_per_epoch = steps_per_epoch # Use existing variable
-
-    # --- 开始: 计算需要跳过的批次 ---
-    batches_to_skip = 0
-    # 只有在恢复的第一个epoch才需要跳过
-    if epoch == start_epoch and resumed_global_optimizer_step > 0:
-        # 计算在这个epoch中已经完成的优化器步数
-        completed_steps_in_epoch = resumed_global_optimizer_step % num_optimizer_steps_per_epoch
-        batches_to_skip = completed_steps_in_epoch * gradient_accumulation_steps
-        if rank == 0 and batches_to_skip > 0:
-            logger.info(f"在恢复的 Epoch {epoch + 1} 中, 将跳过前 {batches_to_skip} 个数据批次...")
-    # --- 结束: 计算需要跳过的批次 ---
-
+    num_optimizer_steps_per_epoch = steps_per_epoch
+    
+    # 禁用跳过逻辑，因为使用新数据集
+    batches_to_skip = 0  # 始终为0
+    
     train(model, optimizer, scheduler, train_loader, device, epoch, 
-          scaler, #! 传递 scaler 参数
-          gradient_accumulation_steps, 
+          scaler, gradient_accumulation_steps, 
           tokens_per_optimizer_step_local=tokens_per_optimizer_step_local,
-          batches_to_skip=batches_to_skip) #! 传递跳过参数
+          batches_to_skip=batches_to_skip)
 
     current_time = time.time()
     elapsed_time = current_time - total_start_time

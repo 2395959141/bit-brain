@@ -3,10 +3,10 @@ from safetensors.torch import save_file
 import os
 
 # 输入的 .pth 文件路径
-pytorch_model_path = "/home/chenyuhang/bit-brain/bitbrain/train/out/pretrain_epoch1_optstep60000_20250608_155925.pth"  # 例如: "./input_model/model.pth"
+pytorch_model_path = "/home/chenyuhang/bit-brain/bitbrain/train/checkpoints/bitbrain_pretrain_epoch_1.pt"  # 例如: "./input_model/model.pth"
 
 # 输出的 .safetensors 文件路径 (你希望保存转换后模型的位置)
-safetensors_path = "/home/chenyuhang/bit-brain/bitbrain/models/pertrain_qwen3_0.6B/"  # 例如: "./output_model/model.safetensors"
+safetensors_path = "/home/chenyuhang/bit-brain/bitbrain/models/Bitbran-0.6B-base"  # 例如: "./output_model/model.safetensors"
 
 print(f"准备将 '{pytorch_model_path}' 转换为 '{safetensors_path}'")
 
